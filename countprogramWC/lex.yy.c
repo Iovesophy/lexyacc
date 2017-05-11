@@ -8,7 +8,7 @@
 #define FLEX_SCANNER
 #define YY_FLEX_MAJOR_VERSION 2
 #define YY_FLEX_MINOR_VERSION 5
-#define YY_FLEX_SUBMINOR_VERSION 37
+#define YY_FLEX_SUBMINOR_VERSION 39
 #if YY_FLEX_SUBMINOR_VERSION > 0
 #define FLEX_BETA
 #endif
@@ -141,7 +141,15 @@ typedef unsigned int flex_uint32_t;
 
 /* Size of default input buffer. */
 #ifndef YY_BUF_SIZE
+#ifdef __ia64__
+/* On IA-64, the buffer size is 16k, not 8k.
+ * Moreover, YY_BUF_SIZE is 2*YY_READ_BUF_SIZE in the general case.
+ * Ditto for the __ia64__ case accordingly.
+ */
+#define YY_BUF_SIZE 32768
+#else
 #define YY_BUF_SIZE 16384
+#endif /* __ia64__ */
 #endif
 
 /* The state buf must be large enough to hold one state per character in the main buffer.
@@ -167,6 +175,7 @@ extern FILE *yyin, *yyout;
 #define EOB_ACT_LAST_MATCH 2
 
     #define YY_LESS_LINENO(n)
+    #define YY_LINENO_REWIND_TO(ptr)
     
 /* Return all but the first "n" matched characters back to the input stream. */
 #define yyless(n) \
@@ -447,8 +456,16 @@ int yy_flex_debug = 0;
 char *yytext;
 #line 1 "count.l"
 #line 2 "count.l"
-	unsigned charCount = 0, wordCount = 0, lineCount = 0;
-#line 452 "lex.yy.c"
+/*
+ *ch2-03.l
+ *
+ * The word counter example for multiple files
+ */
+	unsigned long charCount = 0, wordCount = 0, lineCount = 0;
+
+	#undef yywrap		/* sometimes a macro by default */
+
+#line 469 "lex.yy.c"
 
 #define INITIAL 0
 
@@ -529,7 +546,12 @@ static int input (void );
 
 /* Amount of stuff to slurp up with each read. */
 #ifndef YY_READ_BUF_SIZE
+#ifdef __ia64__
+/* On IA-64, the buffer size is 16k, not 8k */
+#define YY_READ_BUF_SIZE 16384
+#else
 #define YY_READ_BUF_SIZE 8192
+#endif /* __ia64__ */
 #endif
 
 /* Copy whatever the last rule matched to the standard output. */
@@ -630,11 +652,6 @@ YY_DECL
 	register char *yy_cp, *yy_bp;
 	register int yy_act;
     
-#line 8 "count.l"
-
-
-#line 637 "lex.yy.c"
-
 	if ( !(yy_init) )
 		{
 		(yy_init) = 1;
@@ -661,6 +678,12 @@ YY_DECL
 		yy_load_buffer_state( );
 		}
 
+	{
+#line 16 "count.l"
+
+
+#line 686 "lex.yy.c"
+
 	while ( 1 )		/* loops until end-of-file is reached */
 		{
 		yy_cp = (yy_c_buf_p);
@@ -677,7 +700,7 @@ YY_DECL
 yy_match:
 		do
 			{
-			register YY_CHAR yy_c = yy_ec[YY_SC_TO_UI(*yy_cp)];
+			register YY_CHAR yy_c = yy_ec[YY_SC_TO_UI(*yy_cp)] ;
 			if ( yy_accept[yy_current_state] )
 				{
 				(yy_last_accepting_state) = yy_current_state;
@@ -718,26 +741,26 @@ do_action:	/* This label is used only to access EOF actions. */
 
 case 1:
 YY_RULE_SETUP
-#line 10 "count.l"
+#line 18 "count.l"
 {wordCount++; charCount += yyleng;}
 	YY_BREAK
 case 2:
 /* rule 2 can match eol */
 YY_RULE_SETUP
-#line 11 "count.l"
+#line 19 "count.l"
 {charCount++; lineCount++;}
 	YY_BREAK
 case 3:
 YY_RULE_SETUP
-#line 12 "count.l"
+#line 20 "count.l"
 charCount++;
 	YY_BREAK
 case 4:
 YY_RULE_SETUP
-#line 14 "count.l"
+#line 22 "count.l"
 ECHO;
 	YY_BREAK
-#line 741 "lex.yy.c"
+#line 764 "lex.yy.c"
 case YY_STATE_EOF(INITIAL):
 	yyterminate();
 
@@ -868,6 +891,7 @@ case YY_STATE_EOF(INITIAL):
 			"fatal flex scanner internal error--no action found" );
 	} /* end of action switch */
 		} /* end of scanning one token */
+	} /* end of user's declarations */
 } /* end of yylex */
 
 /* yy_get_next_buffer - try to read in a new buffer
@@ -1501,7 +1525,7 @@ YY_BUFFER_STATE yy_scan_bytes  (yyconst char * yybytes, yy_size_t  _yybytes_len 
 	YY_BUFFER_STATE b;
 	char *buf;
 	yy_size_t n;
-	int i;
+	yy_size_t i;
     
 	/* Get memory for full buffer, including space for trailing EOB's. */
 	n = _yybytes_len + 2;
@@ -1731,30 +1755,87 @@ void yyfree (void * ptr )
 
 #define YYTABLES_NAME "yytables"
 
-#line 14 "count.l"
+#line 21 "count.l"
 
 
+
+char **fileList;
+unsigned currentFile = 0;
+unsigned nFiles;
+unsigned long totalCC = 0;
+unsigned long totalWC = 0;
+unsigned long totalLC = 0;
 
 main(argc,argv)
 int argc;
 char **argv;
 {
-	if(argc > 1){
 		FILE *file;
+		fileList = argv+1;
+		nFiles   = argc-1;
 
+		if (argc == 2 ) {
+		/*
+		 * we handle the sigle file case differently from the multiple file case since we do not need to print a summary line.
+		 */
+		currentFile = 1;
 		file = fopen(argv[1], "r");
-		if(!file){
-			fprintf(stderr,"could not open %s\n", argv[1]);
+		if (!file) {
+			fprintf(stderr,"could not open %s\n",argv[1]);
 			exit(1);
 		}
-
 		yyin = file;
-
-	}
+		}
+		if (argc > 2)
+			yywrap();	/* open first file */
 
 	yylex();
-	printf("%d %d %d\n",charCount, wordCount, lineCount);
-	return 0;
+		/*
+		 * once again, we handle zero or one file differently from multiple files.
+		 */
+		if (argc > 2) {
+			printf("%8lu %8lu %8lu %s\n", lineCount, wordCount, charCount, fileList[currentFile-1]);
+			totalCC += charCount;
+			totalWC += wordCount;
+			totalLC += lineCount;
+			printf("%8lu %8lu %8lu total\n", totalLC, totalWC, totalCC);
+		} else
+			printf("%8lu %8lu %8lu error\n", lineCount, wordCount, charCount);
 
+		return 0;
+}
+/*
+ * the lexer calls yywrap to handle EOF conditions (e.g., to)
+ * connect to a new file , as we do in this case.
+ */
+
+yywrap()
+{
+	FILE *file;
+
+	if ((currentFile != 0) && (nFiles > 1) && (currentFile < nFiles)) {
+	/*
+	 * we print out the statistics for the previous file.
+	 */
+	
+	printf("%8lu %8lu %8lu %s\n", lineCount, wordCount, charCount, fileList[currentFile-1]);
+	totalCC += charCount;
+	totalWC += wordCount;
+	totalLC += lineCount;
+	charCount = wordCount = lineCount = 0;
+	fclose(yyin);	/* done with thas file */
+	}
+
+	while (fileList[currentFile] != (char *)0) {
+		file = fopen(fileList[currentFile++], "r");
+		if (file != NULL) {
+			yyin = file;
+			break;
+		}
+		fprintf(stderr,
+			"could not open %s\n",
+			fileList[currentFile-1]);
+		}
+		return (file ? 0 : 1);		/* 0 mean there is more input */
 }
 
