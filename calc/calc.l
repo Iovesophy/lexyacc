@@ -26,4 +26,42 @@ static int my_yyinput(char *buf, int max_size);
 <INITIAL>"=="		return EQ;
 <INITIAL>"!="		return NE;
 <INITIAL>">"		return GT;
-<INITIAL>"<"		return ;
+<INITIAL>">="		return GE;
+<INITIAL>"<"		return LT;
+<INITIAL>"<="		return LE;
+<INITIAL>"+"		return ADD;
+<INITIAL>"-"		return SUB;
+<INITIAL>"*"		return MUL;
+<INITIAL>"/"		return DIV;
+<INITIAL>"%"		return MOD;
+<INITIAL>[A-Za-z_][A-Za-z_0-9]* {
+	yylval.identifier = clc_malloc(strlen(yytext) + 1);
+	strcpy(yylval.identifier, yytext);
+	return IDENTIFIER;
+}
+<INITIAL>[1-9][0-9]* {
+	Expression *expression = clc_allox_expression(INT_EXPRESSION);
+	sscanf(yytext, "%d", &expression->u.int_value);
+	yylval.expression = expression;
+	return INT_LITERAL;
+}
+<INITIAL>"0" {
+	Expression *expression = clc_allox_expression(INT_EXPRESSION);
+	expression->u.int_value = 0;
+	yylval.expression = expression;
+	return INT_LITERAL;
+}
+<INITIAL>[0-9]*\.[0-9]* {
+	Expression *expression = clc_alloc_expression(DOUBLE_EXPRESSION);
+	sscanf(yytext, "%lf", &expression->u.double_value);
+	yylval.expression = expression;
+	return DOUBLE_LITERAL;
+}
+<INITIAL>[ \t\n];
+<INITIAL>^#	BEGIN COMMENT;
+<INITIAL>.	clc_compile_error(CHARACTER_INVALID_ERR, NULL);
+<COMMENT>\n	BEGIN INITIAL;
+<COMMENT>.	;
+%%
+
+
