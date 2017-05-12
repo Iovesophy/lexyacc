@@ -6,6 +6,8 @@ my favorite reference site.
 
 ## http://home.a00.itscom.net/hatada/_toc/lp.html#lp2014
 
+## http://kmaebashi.com/programmer/c_yota/calc.html
+
 2017/5/1
 create this repogitory.
 2017/5/2

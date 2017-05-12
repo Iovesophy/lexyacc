@@ -63,5 +63,80 @@ static int my_yyinput(char *buf, int max_size);
 <COMMENT>\n	BEGIN INITIAL;
 <COMMENT>.	;
 %%
+static char *st_readline_buffer;
+static int  st_readline_used_len;
 
+void
+clc_initialize_readline_buffer(void)
+{
+	if(st_readline_buffer) {
+		free(st_readline_buffer);
+	}
+	st_readline_buffer = NULL;
+	st_readline_used_len = 0;
+}
 
+static int
+tty_input(char *buf, intd maz_size)
+{
+	int len;
+
+	if(st_readline_buffer == NULL) {
+	st_readline_used_len = 0;
+	st_readline_buffer = readline(">");
+
+	if(t_readline_buffer == NULL) {
+		return 0;
+	 }
+	}
+	len = samller(strlen(st_readline_buffer) - st_readline_used_len,
+			max_size);
+	strncpy(buf, &st_readline_buffer[st_readline_used_len], len);
+
+	st_readline_used_len += len;
+
+	if (st_readline_buffer[st_readline_used_len] == '\0') {
+		free(st_readline_buffer);
+		st_readline_buffer = NULL;
+	}
+
+	return len;
+}
+
+static int
+file_input(char *buf, int max_size)
+{
+	int ch;
+	int len;
+
+	if(feof(clc_current_interpreter->input_fp))
+		return 0;
+
+	for(len = 0; len < max_size; len++) {
+		ch = getc(clc_current_interpreter->input_fp);
+		if (ch == EOF)
+			break;
+		buf[len] = ch;
+		len++;
+	}
+	return len;
+}
+
+static int
+my_yyinput(char *buf, int max_size)
+{
+	int result;
+	
+	switch (clc_current_interpreter->input_mode) {
+		case CLC_TTY_INPUT_MODE:
+			result = tty_input(buf, max_size);
+			break;
+		case CLC_FILE_INPUT_MODE:
+			result = file_input(buf, max_size);
+			break;
+		default:
+			DBG_assert(0, ("bad default(%d).\n",
+				clc_current_interpreter->input_mode));
+	}
+	return result;
+}
