@@ -16,6 +16,7 @@ static int my_yyinput(char *buf, int max_size);
 <INITIAL>"if"		return IF;
 <INITIAL>"else"		return ELSE;
 <INITIAL>"while"	return WHILE;
+<INITIAL>"end"		return END;
 <INITIAL>"("		return LP;
 <INITIAL>")"		return RP;
 <INITIAL>"{"		return LC;
